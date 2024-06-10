@@ -1,0 +1,75 @@
+services:
+  app:
+    build:
+      args:
+        user: krash
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: pruebabackend
+    container_name: pruebabackend-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    ports:
+      - 6001:6001
+    volumes:
+      - ./:/var/www
+    networks:
+      - pruebabackend
+
+  db:
+    image: mysql:latest
+    container_name: pruebabackend-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - pruebabackend
+
+  nginx:
+    image: nginx:alpine
+    container_name: pruebabackend-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./config-docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - pruebabackend
+
+  dbadmin:
+    container_name: pruebabackend-dbadminer
+    hostname: dbadmin
+    image: adminer
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    networks:
+      - pruebabackend
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    container_name: pruebabackend-redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    networks:
+      - pruebabackend
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  pruebabackend:
+    driver: bridge
